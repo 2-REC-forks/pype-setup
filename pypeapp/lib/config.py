@@ -219,6 +219,10 @@ def get_presets(project=None, first_run=False):
 
     project_configs_path = os.environ.get('PYPE_PROJECT_CONFIGS')
     if not project_configs_path:
+        log.warning(
+            'Preset path for projects ("PYPE_PROJECT_CONFIGS") not defined'
+            ' => Using default presets'
+        )
         return default_data
 
     project_configs_path = os.path.normpath(project_configs_path)
@@ -277,12 +281,18 @@ def update_dict(main_dict, enhance_dict):
 
     .. note:: does not overrides whole value on first found key
               but only values differences from enhance_dict
+              UNLESS the key '_override_' is defined to 'true' (boolean)
     """
+    override = (enhance_dict.pop("_override_", False) == True)
+
     for key, value in enhance_dict.items():
         if key not in main_dict:
             main_dict[key] = value
         elif isinstance(value, dict) and isinstance(main_dict[key], dict):
-            main_dict[key] = update_dict(main_dict[key], value)
+            if not override:
+                main_dict[key] = update_dict(main_dict[key], value)
+            else:
+                main_dict[key] = value
         else:
             main_dict[key] = value
     return main_dict
